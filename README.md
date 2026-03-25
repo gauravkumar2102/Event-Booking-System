@@ -1,4 +1,4 @@
-# Event Booking System — Junior Node.js Developer Assignment
+# Event Booking System 
 
 A RESTful API built with **Node.js + Express + MySQL** for managing events and ticket bookings.
 
