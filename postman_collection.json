@@ -1,0 +1,86 @@
+{
+  "info": {
+    "name": "Event Booking System",
+    "description": "Postman collection for the Mini Event Management System API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" }
+  ],
+  "item": [
+    {
+      "name": "Events",
+      "item": [
+        {
+          "name": "GET All Events",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/events",
+            "description": "List all upcoming events"
+          }
+        },
+        {
+          "name": "POST Create Event",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/events",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Tech Conference 2025\",\n  \"description\": \"Annual technology conference\",\n  \"date\": \"2025-12-15T09:00:00Z\",\n  \"total_capacity\": 200\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "POST Create Booking",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/bookings",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user_id\": 1,\n  \"event_id\": 1\n}"
+            },
+            "description": "Book a ticket. Returns unique booking_code."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "GET User Bookings",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/users/1/bookings",
+            "description": "Get all bookings for user with ID 1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Attendance",
+      "item": [
+        {
+          "name": "POST Mark Attendance",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/events/1/attendance",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"booking_code\": \"YOUR_CODE_HERE\"\n}"
+            },
+            "description": "Takes booking_code, marks attendance, returns total tickets booked"
+          }
+        }
+      ]
+    }
+  ]
+}

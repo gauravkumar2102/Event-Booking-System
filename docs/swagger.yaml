@@ -1,0 +1,380 @@
+openapi: 3.0.3
+info:
+  title: Event Booking System API
+  description: A Mini Event Management System for browsing events and booking tickets.
+  version: 1.0.0
+  contact:
+    email: support@example.com
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Events
+    description: Event management
+  - name: Bookings
+    description: Ticket bookings
+  - name: Users
+    description: User operations
+  - name: Attendance
+    description: Event attendance
+
+paths:
+
+  /events:
+    get:
+      tags: [Events]
+      summary: List all upcoming events
+      description: Returns all upcoming events with their details.
+      responses:
+        '200':
+          description: A list of upcoming events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      tags: [Events]
+      summary: Create a new event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /bookings:
+    post:
+      tags: [Bookings]
+      summary: Book a ticket for a user
+      description: Creates a booking if tickets are available. Uses a database transaction to prevent race conditions. Returns a unique booking code.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
+      responses:
+        '201':
+          description: Booking created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/BookingConfirmation'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Conflict - No tickets available or user already booked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /users/{id}/bookings:
+    get:
+      tags: [Users]
+      summary: Get all bookings for a user
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The user ID
+      responses:
+        '200':
+          description: Bookings retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user:
+                        $ref: '#/components/schemas/User'
+                      bookings:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/UserBooking'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /events/{id}/attendance:
+    post:
+      tags: [Attendance]
+      summary: Mark attendance using booking code
+      description: Takes a booking code, validates it, marks entry, and returns total tickets booked for the event.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: The event ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttendanceRequest'
+      responses:
+        '200':
+          description: Attendance marked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AttendanceResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Attendance already marked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  schemas:
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Tech Conference 2025
+        description:
+          type: string
+          example: Annual technology conference
+        date:
+          type: string
+          format: date-time
+          example: "2025-12-15T09:00:00.000Z"
+        total_capacity:
+          type: integer
+          example: 200
+        remaining_tickets:
+          type: integer
+          example: 198
+
+    CreateEventRequest:
+      type: object
+      required: [title, date, total_capacity]
+      properties:
+        title:
+          type: string
+          example: Tech Conference 2025
+        description:
+          type: string
+          example: Annual technology conference covering AI and Web3
+        date:
+          type: string
+          format: date-time
+          example: "2025-12-15T09:00:00Z"
+        total_capacity:
+          type: integer
+          minimum: 1
+          example: 200
+
+    CreateBookingRequest:
+      type: object
+      required: [user_id, event_id]
+      properties:
+        user_id:
+          type: integer
+          example: 1
+        event_id:
+          type: integer
+          example: 1
+
+    BookingConfirmation:
+      type: object
+      properties:
+        booking_id:
+          type: integer
+          example: 5
+        user_id:
+          type: integer
+          example: 1
+        event_id:
+          type: integer
+          example: 1
+        booking_code:
+          type: string
+          example: A3F9D2B1C7E4
+        message:
+          type: string
+          example: Booking confirmed! Use your booking code for entry.
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: Alice Johnson
+        email:
+          type: string
+          example: alice@example.com
+
+    UserBooking:
+      type: object
+      properties:
+        booking_id:
+          type: integer
+          example: 5
+        booking_code:
+          type: string
+          example: A3F9D2B1C7E4
+        booking_date:
+          type: string
+          format: date-time
+        event_id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Tech Conference 2025
+        description:
+          type: string
+        event_date:
+          type: string
+          format: date-time
+        total_capacity:
+          type: integer
+        remaining_tickets:
+          type: integer
+
+    AttendanceRequest:
+      type: object
+      required: [booking_code]
+      properties:
+        booking_code:
+          type: string
+          example: A3F9D2B1C7E4
+
+    AttendanceResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Attendance marked successfully
+        user:
+          type: object
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+        booking_code:
+          type: string
+        total_tickets_booked:
+          type: integer
+          example: 42
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Error message here
+
+  responses:
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              errors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    msg:
+                      type: string
+                    path:
+                      type: string
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
