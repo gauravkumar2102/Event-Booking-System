@@ -3,6 +3,7 @@
 A RESTful API built with **Node.js + Express + MySQL** for managing events and ticket bookings.
 
 ---
+LIVE APPLICATION LINK - https://event-booking-system-production-d8c2.up.railway.app/api-docs
 
 ## Project Structure
 
